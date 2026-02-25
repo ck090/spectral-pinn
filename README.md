@@ -14,6 +14,7 @@ By hardcoding the analytical time evolution of the coefficients ($c_k(t) = c_k(0
 
 Files
 -----
+
 - `train.py`: Training script
 - `src/model.py`: Neural network architecture
 - `src/data.py`: Data generation utilities
@@ -21,9 +22,11 @@ Files
 
 Usage
 -----
+
 **Dependencies:** torch, numpy, matplotlib
 
 **Run from the root directory:**
+
 ```bash
 conda activate apebench  # or your environment
 KMP_DUPLICATE_LIB_OK=TRUE python train.py
