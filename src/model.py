@@ -21,10 +21,10 @@ class SpectralPINN(nn.Module):
         self.register_buffer('k', torch.arange(1, num_modes + 1).float())
 
     def forward(self, u0, x, t):
-        c0 = self.net(u0).unsqueeze(1)                            # (B, 1, K)
-        lam = self.nu * (self.k * np.pi / self.L) ** 2           # (K,)
-        phi = torch.sin(x * (self.k * np.pi / self.L))           # (B, N, K)
-        decay = torch.exp(-lam.unsqueeze(0).unsqueeze(0) * t)    # (B, N, K)
+        c0 = self.net(u0).unsqueeze(1)         
+        lam = self.nu * (self.k * np.pi / self.L) ** 2
+        phi = torch.sin(x * (self.k * np.pi / self.L))  
+        decay = torch.exp(-lam.unsqueeze(0).unsqueeze(0) * t)
         return (c0 * decay * phi).sum(-1, keepdim=True)
 
     def coeffs(self, u0):
