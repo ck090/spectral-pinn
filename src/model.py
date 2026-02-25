@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-
 class SpectralPINN(nn.Module):
     def __init__(self, num_modes, hidden_dim, input_dim, L=1.0, nu=0.01):
         super().__init__()
