@@ -14,30 +14,34 @@ L = 1.0
 n_modes, hdim, n_pts = 20, 64, 50
 bs, epochs, lr = 32, 1000, 1e-3
 
+# ICs from paper's function space W = span{sin(2πkx), k=1..K}
 test_cases = {
-    "sin(pi*x)":                lambda x: np.sin(np.pi * x),
-    "sin(2pi*x)":               lambda x: np.sin(2 * np.pi * x),
-    "sin(pi*x)+0.5sin(3pi*x)":  lambda x: np.sin(np.pi*x) + 0.5*np.sin(3*np.pi*x),
-    "gaussian(c=0.5)":          lambda x: np.exp(-50*(x-0.5)**2) * np.sin(np.pi*x),
-    "x(1-x)":                   lambda x: x * (1 - x),
+    "sin(2pi*x)":               lambda x: np.sin(2*np.pi*x),
+    "sin(4pi*x)":               lambda x: np.sin(4*np.pi*x),
+    "sin(2pi*x)+0.5sin(4pi*x)": lambda x: np.sin(2*np.pi*x) + 0.5*np.sin(4*np.pi*x),
+    "sin(2pi*x)+0.5sin(6pi*x)": lambda x: np.sin(2*np.pi*x) + 0.5*np.sin(6*np.pi*x),
+    "3-mode mix (k=1,2,4)":     lambda x: 0.6*np.sin(2*np.pi*x) + 0.5*np.sin(4*np.pi*x) + 0.4*np.sin(8*np.pi*x),
 }
 
 
 def fourier_coeffs(fn, n_modes=n_modes, n_quad=1000):
+    """Project fn onto paper basis {sin(2πkx/L), k=1..K}."""
     x = np.linspace(0, L, n_quad)
-    return np.array([(2/L) * np.trapezoid(fn(x) * np.sin(k*np.pi*x/L), x)
+    return np.array([(2/L) * np.trapezoid(fn(x) * np.sin(2*k*np.pi*x/L), x)
                      for k in range(1, n_modes+1)])
 
 def analytical_linear(x, t, ck, pde, **kw):
+    """Analytical solution using paper basis {sin(2πkx/L)}."""
     u = np.zeros_like(x)
     for ki, c in enumerate(ck, 1):
+        freq = 2 * ki * np.pi / L
         if pde == 'heat':
-            T = np.exp(-kw['nu'] * (ki*np.pi/L)**2 * t)
+            T = np.exp(-kw['nu'] * freq**2 * t)
         elif pde == 'wave':
-            T = np.cos(kw['c'] * ki*np.pi/L * t)
+            T = np.cos(kw['c'] * freq * t)
         elif pde == 'reaction_diffusion':
-            T = np.exp(-(kw['nu']*(ki*np.pi/L)**2 - kw['r']) * t)
-        u += c * T * np.sin(ki*np.pi*x/L)
+            T = np.exp(-(kw['nu'] * freq**2 - kw['r']) * t)
+        u += c * T * np.sin(freq * x)
     return u
 
 def fd_burgers(fn, t_final, nu=0.01, nx=300):

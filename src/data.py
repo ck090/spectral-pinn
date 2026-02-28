@@ -16,8 +16,7 @@ def sample_u0(batch_size, n_pts, L=1.0, mode='mix_sine'):
     elif mode == 'mix_sine':
         u0 = torch.zeros_like(x)
         for k in range(1, 5):
-            u0 += (torch.rand(batch_size, 1) * 2 - 1) * torch.sin(k * np.pi * x / L)
+            # paper basis: sin(2πkx/L) satisfies u(0)=u(L)=0 exactly
+            u0 += (torch.rand(batch_size, 1) * 2 - 1) * torch.sin(2 * k * np.pi * x / L)
 
-    # window to satisfy u(0)=u(L)=0
-    u0 = u0 * torch.sin(np.pi * x / L)
     return x, u0

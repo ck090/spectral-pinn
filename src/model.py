@@ -23,19 +23,20 @@ class LinearSpectralPINN(nn.Module):
 
     def _time_factor(self, t):
         k, L = self.k, self.L
+        freq = 2 * k * np.pi / L      # paper: sin(2πkx/L) basis
         if self.pde == 'heat':
-            return torch.exp(-self.kw['nu'] * (k * np.pi / L) ** 2 * t)
+            return torch.exp(-self.kw['nu'] * freq ** 2 * t)
         elif self.pde == 'wave':
-            return torch.cos(self.kw['c'] * k * np.pi / L * t)
+            return torch.cos(self.kw['c'] * freq * t)
         elif self.pde == 'reaction_diffusion':
-            lam = self.kw['nu'] * (k * np.pi / L) ** 2 - self.kw['r']
+            lam = self.kw['nu'] * freq ** 2 - self.kw['r']
             return torch.exp(-lam * t)
 
     def forward(self, u0, x, t):
         # t: (B, N, 1)
-        c0  = self.net(u0).unsqueeze(1)                      # (B, 1, K)
-        T   = self._time_factor(t)                           # (B, N, K)
-        phi = torch.sin(x * (self.k * np.pi / self.L))      # (B, N, K)
+        c0  = self.net(u0).unsqueeze(1)                          # (B, 1, K)
+        T   = self._time_factor(t)                               # (B, N, K)
+        phi = torch.sin(x * (2 * self.k * np.pi / self.L))      # (B, N, K)
         return (c0 * T * phi).sum(-1, keepdim=True)
 
 
@@ -62,15 +63,15 @@ class BurgersSpectralPINN(nn.Module):
     def forward(self, u0, x, t):
         # t: (B, 1)
         h = self.encoder(u0)
-        c = self.coeff_net(torch.cat([h, t], dim=-1)).unsqueeze(1)  # (B, 1, K)
-        phi = torch.sin(x * (self.k * np.pi / self.L))               # (B, N, K)
+        c = self.coeff_net(torch.cat([h, t], dim=-1)).unsqueeze(1)      # (B, 1, K)
+        phi = torch.sin(x * (2 * self.k * np.pi / self.L))               # (B, N, K)
         return (c * phi).sum(-1, keepdim=True)
 
     def residual(self, u0, x, t):
         # x: (B, N, 1), t: (B, 1) requires_grad=True
         h    = self.encoder(u0)
         c    = self.coeff_net(torch.cat([h, t], dim=-1))  # (B, K)
-        freq = self.k * np.pi / self.L
+        freq = 2 * self.k * np.pi / self.L      # paper: sin(2πkx/L) basis
         phi    = torch.sin(x * freq)
         phi_x  = torch.cos(x * freq) * freq
         phi_xx = -phi * freq ** 2
