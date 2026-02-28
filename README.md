@@ -5,23 +5,9 @@ Reference: "Numerical Methods For PDEs Over Manifolds Using Spectral Physics Inf
 https://www.alphaxiv.org/abs/2302.05322
 
 Overview
+
 --------
-The architecture leverages the spectral decomposition of the solution. The network maps
-a discretized initial condition $u(x,0)$ to spectral coefficients $c_k$, then
-applies the known eigenfunction basis $\phi_k(x) = \sin(k\pi x/L)$ with the
-appropriate time factor for the target PDE.
-
-For linear PDEs the time evolution is baked in analytically — meaning the PDE is 
-satisfied by construction and training reduces to fitting the initial condition.
-For Burgers (nonlinear), time-dependent coefficients are learned with a PDE residual loss.
-
-Files
------
-
-- `train_eval.py`: Training and evaluation for all PDEs
-- `src/model.py`: `LinearSpectralPINN` and `BurgersSpectralPINN`
-- `src/data.py`: Initial condition sampling
-- `src/__init__.py`: Module initialization
+The architecture leverages the spectral decomposition of the solution. The network maps a discretized initial condition $u(x,0)$ to spectral coefficients $c_k$, then applies the known eigenfunction basis $\phi_k(x) = \sin(k\pi x/L)$ with the appropriate time factor for the target PDE.
 
 Usage
 -----
@@ -52,7 +38,6 @@ Seed fixed to 42 for reproducibility.
 | x(1−x) | 1.88e-01 | 1.30e-01 | 1.22e-01 | 1.20e-01 |
 
 Errors drop with time for smooth ICs — diffusion kills high-frequency content, which is exactly what the model struggles with most.
-
 ---
 
 **Wave equation** — $u_{tt} = c^2 u_{xx}$, $c=1.0$ (reformulated as $u_t + cu_x = 0$ in spectral form)
@@ -80,7 +65,6 @@ Higher errors than heat — no dissipation means the network can't lean on smoot
 | x(1−x) | 1.50e-01 | 6.85e-02 | 5.49e-02 | 5.10e-02 |
 
 Similar to heat, the reaction term shifts the eigenvalue decay rate but doesn't change the overall trend.
-
 ---
 
 **Burgers equation** — $u_t + uu_x = \nu u_{xx}$, $\nu=0.05$ (nonlinear, vs FD reference)

@@ -63,9 +63,6 @@ def rel_l2(pred, ref):
         return np.linalg.norm(pred - ref)
     return np.linalg.norm(pred - ref) / denom
 
-
-# ── training ──────────────────────────────────────────────────────────────────
-
 def train_linear(pde, kw, device):
     model = LinearSpectralPINN(pde, n_modes, hdim, n_pts, L=L, **kw).to(device)
     opt   = optim.Adam(model.parameters(), lr=lr)
@@ -109,9 +106,6 @@ def train_burgers(nu, device):
             print(f"  [{ep:4d}] ic {ic_loss.item():.5f}  pde {pde_loss.item():.5f}")
     return model
 
-
-# ── evaluation ────────────────────────────────────────────────────────────────
-
 def eval_linear(model, pde, kw, t_vals):
     x_np = np.linspace(0, L, n_pts)
     x_t  = torch.tensor(x_np, dtype=torch.float32).unsqueeze(0).unsqueeze(-1)
@@ -146,9 +140,6 @@ def eval_burgers(model, nu, t_vals):
                 ref = np.interp(x_np, x_fd, u_fd)
             errs.append(rel_l2(pred, ref))
         print(f"  {name:<32}" + "".join(f"{e:.4e}  " for e in errs))
-
-
-# ── main ──────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
