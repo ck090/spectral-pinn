@@ -1,5 +1,4 @@
 # Zelig & Dekel (2023) - https://arxiv.org/abs/2302.05322
-
 import os
 import torch
 import torch.nn as nn
@@ -16,11 +15,11 @@ bs, epochs, lr = 32, 1000, 1e-3
 
 # ICs from paper's function space W = span{sin(2πkx), k=1..K}
 test_cases = {
-    "sin(2pi*x)":               lambda x: np.sin(2*np.pi*x),
-    "sin(4pi*x)":               lambda x: np.sin(4*np.pi*x),
+    "sin(2pi*x)": lambda x: np.sin(2*np.pi*x),
+    "sin(4pi*x)": lambda x: np.sin(4*np.pi*x),
     "sin(2pi*x)+0.5sin(4pi*x)": lambda x: np.sin(2*np.pi*x) + 0.5*np.sin(4*np.pi*x),
     "sin(2pi*x)+0.5sin(6pi*x)": lambda x: np.sin(2*np.pi*x) + 0.5*np.sin(6*np.pi*x),
-    "3-mode mix (k=1,2,4)":     lambda x: 0.6*np.sin(2*np.pi*x) + 0.5*np.sin(4*np.pi*x) + 0.4*np.sin(8*np.pi*x),
+    "3-mode mix (k=1,2,4)": lambda x: 0.6*np.sin(2*np.pi*x) + 0.5*np.sin(4*np.pi*x) + 0.4*np.sin(8*np.pi*x),
 }
 
 
@@ -80,7 +79,7 @@ def train_linear(pde, kw, device):
         loss = nn.MSELoss()(model(u0, x_fix, t0).squeeze(-1), u0)
         loss.backward(); opt.step()
         if ep % 200 == 0:
-            print(f"  [{ep:4d}] loss {loss.item():.5f}")
+            print(f"  [{ep:4d}] residual loss: {loss.item():.5f}")
     return model
 
 
@@ -107,7 +106,7 @@ def train_burgers(nu, device):
         loss = ic_loss + w_pde * pde_loss
         loss.backward(); opt.step()
         if ep % 400 == 0:
-            print(f"  [{ep:4d}] ic {ic_loss.item():.5f}  pde {pde_loss.item():.5f}")
+            print(f"  [{ep:4d}] ic loss: {ic_loss.item():.5f} residual loss: {pde_loss.item():.5f}")
     return model
 
 def eval_linear(model, pde, kw, t_vals):
@@ -146,12 +145,12 @@ def eval_burgers(model, nu, t_vals):
         print(f"  {name:<32}" + "".join(f"{e:.4e}  " for e in errs))
 
 if __name__ == "__main__":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = "cpu"
     os.makedirs('checkpoints', exist_ok=True)
 
     configs = [
-        ('heat',               {'nu': 0.01},           [0.0, 0.5, 1.0, 2.0]),
-        ('wave',               {'c':  1.0},            [0.0, 0.25, 0.75, 1.5]),
+        ('heat', {'nu': 0.01}, [0.0, 0.5, 1.0, 2.0]),
+        ('wave', {'c':  1.0}, [0.0, 0.25, 0.75, 1.5]),
         ('reaction_diffusion', {'nu': 0.01, 'r': 0.05},[0.0, 0.5, 1.0, 2.0]),
     ]
 
