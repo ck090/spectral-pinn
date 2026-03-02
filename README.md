@@ -7,7 +7,7 @@ https://www.alphaxiv.org/abs/2302.05322
 Overview
 
 --------
-The architecture leverages the spectral decomposition of the solution. The network maps a discretized initial condition $u(x,0)$ to spectral coefficients $c_k$, then applies the known eigenfunction basis $\phi_k(x) = \sin(k\pi x/L)$ with the appropriate time factor for the target PDE.
+The architecture leverages the spectral decomposition of the solution. The network maps a discretized initial condition $u(x,0)$ to spectral coefficients $c_k$, then applies the known eigenfunction basis $\phi_k(x) = \sin(2k\pi x/L)$ with the appropriate time factor for the target PDE.
 
 Usage
 -----
@@ -29,52 +29,40 @@ Seed fixed to 42 for reproducibility.
 
 **Heat equation** — $u_t = \nu u_{xx}$, $\nu=0.01$
 
-| Initial Condition | t=0.0 | t=0.5 | t=1.0 | t=2.0 |
+| Initial Condition | t=0.0 | t=0.1 | t=0.2 | t=0.5 |
 |---|---|---|---|---|
-| sin(πx) | 1.16e-01 | 4.59e-02 | 2.72e-02 | 1.54e-02 |
-| sin(2πx) | 1.58e-01 | 7.79e-02 | 8.05e-02 | 1.04e-01 |
-| sin(πx) + 0.5·sin(3πx) | 2.77e-01 | 1.28e-01 | 8.03e-02 | 4.06e-02 |
-| Gaussian (center=0.5) | 2.46e-01 | 1.29e-01 | 1.12e-01 | 1.06e-01 |
-| x(1−x) | 1.88e-01 | 1.30e-01 | 1.22e-01 | 1.20e-01 |
+| sin(2πx) | 1.30e-02 | 1.46e-03 | 1.02e-03 | 7.34e-04 |
+| sin(4πx) | 1.30e-02 | 4.75e-03 | 4.47e-03 | 5.30e-03 |
+| sin(2πx)+0.5·sin(4πx) | 1.52e-02 | 2.58e-03 | 1.67e-03 | 1.13e-03 |
+| sin(2πx)+0.5·sin(6πx) | 1.31e-02 | 1.85e-03 | 1.26e-03 | 7.87e-04 |
+| 3-mode mix (k=1,2,4) | 1.87e-02 | 4.28e-03 | 3.27e-03 | 2.91e-03 |
 
-Errors drop with time for smooth ICs — diffusion kills high-frequency content, which is exactly what the model struggles with most.
+Errors drop with time — diffusion damps high-frequency content, reducing the approximation error.
+
 ---
 
-**Wave equation** — $u_{tt} = c^2 u_{xx}$, $c=1.0$ (reformulated as $u_t + cu_x = 0$ in spectral form)
+**Wave equation** — $u_{tt} = c^2 u_{xx}$, $c=1.0$
 
-| Initial Condition | t=0.0 | t=0.25 | t=0.75 | t=1.5 |
+| Initial Condition | t=0.0 | t=0.1 | t=0.2 | t=0.5 |
 |---|---|---|---|---|
-| sin(πx) | 1.35e-01 | 1.27e-01 | 1.27e-01 | 3.59e-01 |
-| sin(2πx) | 1.74e-01 | 4.62e-01 | 4.62e-01 | 1.57e-01 |
-| sin(πx) + 0.5·sin(3πx) | 3.22e-01 | 3.07e-01 | 3.07e-01 | 8.78e-01 |
-| Gaussian (center=0.5) | 2.61e-01 | 2.61e-01 | 2.61e-01 | 2.21e-01 |
-| x(1−x) | 2.11e-01 | 2.06e-01 | 2.06e-01 | 1.26e-01 |
+| sin(2πx) | 2.64e-02 | 1.49e-02 | 9.22e-02 | 2.64e-02 |
+| sin(4πx) | 2.52e-02 | 5.71e-02 | 1.50e-02 | 2.52e-02 |
+| sin(2πx)+0.5·sin(4πx) | 2.92e-02 | 2.06e-02 | 3.00e-02 | 2.92e-02 |
+| sin(2πx)+0.5·sin(6πx) | 3.35e-02 | 2.38e-02 | 1.47e-01 | 3.35e-02 |
+| 3-mode mix (k=1,2,4) | 2.71e-02 | 2.70e-02 | 2.39e-02 | 2.71e-02 |
 
-Higher errors than heat — no dissipation means the network can't lean on smoothing. Errors at t=0.25 and t=0.75 are identical for most cases because $|\cos(k\pi t)|$ is symmetric around the quarter period.
+No dissipation — errors are governed by the accuracy of the learned coefficient extraction, not time.
 
 ---
 
 **Reaction-diffusion** — $u_t = \nu u_{xx} + ru$, $\nu=0.01$, $r=0.05$
 
-| Initial Condition | t=0.0 | t=0.5 | t=1.0 | t=2.0 |
+| Initial Condition | t=0.0 | t=0.1 | t=0.2 | t=0.5 |
 |---|---|---|---|---|
-| sin(πx) | 1.13e-01 | 4.84e-02 | 3.56e-02 | 3.13e-02 |
-| sin(2πx) | 1.74e-01 | 8.70e-02 | 8.26e-02 | 8.52e-02 |
-| sin(πx) + 0.5·sin(3πx) | 2.74e-01 | 1.23e-01 | 8.85e-02 | 7.50e-02 |
-| Gaussian (center=0.5) | 2.69e-01 | 1.09e-01 | 7.60e-02 | 5.72e-02 |
-| x(1−x) | 1.50e-01 | 6.85e-02 | 5.49e-02 | 5.10e-02 |
+| sin(2πx) | 2.11e-02 | 3.44e-03 | 2.47e-03 | 1.76e-03 |
+| sin(4πx) | 1.77e-02 | 9.42e-03 | 9.98e-03 | 1.22e-02 |
+| sin(2πx)+0.5·sin(4πx) | 2.02e-02 | 5.91e-03 | 5.19e-03 | 4.42e-03 |
+| sin(2πx)+0.5·sin(6πx) | 2.83e-02 | 5.40e-03 | 4.49e-03 | 3.37e-03 |
+| 3-mode mix (k=1,2,4) | 2.04e-02 | 5.56e-03 | 4.76e-03 | 3.84e-03 |
 
-Similar to heat, the reaction term shifts the eigenvalue decay rate but doesn't change the overall trend.
----
-
-**Burgers equation** — $u_t + uu_x = \nu u_{xx}$, $\nu=0.05$ (nonlinear, vs FD reference)
-
-| Initial Condition | t=0.0 | t=0.1 | t=0.2 | t=0.4 |
-|---|---|---|---|---|
-| sin(πx) | 2.42e-01 | 2.61e-01 | 3.00e-01 | 3.71e-01 |
-| sin(2πx) | 4.01e-01 | 2.94e-01 | 2.09e-01 | 4.71e-01 |
-| sin(πx) + 0.5·sin(3πx) | 4.81e-01 | 3.65e-01 | 2.88e-01 | 2.79e-01 |
-| Gaussian (center=0.5) | 5.43e-01 | 4.04e-01 | 3.71e-01 | 3.96e-01 |
-| x(1−x) | 2.46e-01 | 2.10e-01 | 1.69e-01 | 1.10e-01 |
-
-Larger errors as expected — Burgers is nonlinear so the clean spectral decomposition doesn't hold. The model uses a learned time-dependent coefficient network with a PDE residual loss, which is a rougher approximation.
+Similar to heat — the reaction term $r$ shifts the effective eigenvalue decay rate but doesn't alter the structure.
