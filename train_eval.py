@@ -10,7 +10,7 @@ torch.manual_seed(42)
 np.random.seed(42)
 
 L = 1.0
-n_modes, hdim, n_pts = 20, 64, 50
+n_modes, hdim, n_pts = 20, 64, 101   # paper: L=101 equispaced pts, K=20 modes
 bs, epochs, lr = 32, 1000, 1e-3
 
 # ICs from paper's function space W = span{sin(2πkx), k=1..K}
@@ -66,11 +66,31 @@ def rel_l2(pred, ref):
         return np.linalg.norm(pred - ref)
     return np.linalg.norm(pred - ref) / denom
 
+def pretrain_transform(model, device, epochs=500):
+    """Pretrain linear transform block C~: R¹⁰¹→R²⁰ to extract sine coefficients.
+    Paper §4.1: pretrained separately on 1000 ICs before full model training.
+    """
+    opt = optim.Adam(model.net.parameters(), lr=1e-2)
+    x_np = np.linspace(0, L, n_pts)
+    freqs = torch.tensor([2*k*np.pi/L for k in range(1, n_modes+1)],
+                         dtype=torch.float32, device=device)
+    phi0 = torch.sin(torch.tensor(x_np, dtype=torch.float32, device=device)
+                     .unsqueeze(-1) * freqs)          # (n_pts, K)
+    for _ in range(epochs):
+        c = torch.rand(bs, n_modes, device=device) * 2 - 1
+        c = c / c.norm(dim=1, keepdim=True)           # unit-normalised ICs
+        u0 = c @ phi0.T                               # (bs, n_pts)
+        opt.zero_grad()
+        nn.MSELoss()(model.net(u0), c).backward()
+        opt.step()
+
+
 def train_linear(pde, kw, device):
     model = LinearSpectralPINN(pde, n_modes, hdim, n_pts, L=L, **kw).to(device)
-    opt   = optim.Adam(model.parameters(), lr=lr)
+    opt = optim.Adam(model.parameters(), lr=lr)
     x_fix = torch.linspace(0,L,n_pts).unsqueeze(0).expand(bs,-1).unsqueeze(-1).to(device)
-    t0    = torch.zeros(bs, n_pts, 1, device=device)
+    t0 = torch.zeros(bs, n_pts, 1, device=device)
+    pretrain_transform(model, device)     # §4.1: pretrain transform block first
     print(f"\n[{pde}]")
     for ep in range(epochs):
         opt.zero_grad()
@@ -84,10 +104,10 @@ def train_linear(pde, kw, device):
 
 
 def train_burgers(nu, device):
-    T_max, N_col = 0.5, 30
+    T_max, N_col = 2.0, 30
     n_epochs = 2000
     model = BurgersSpectralPINN(n_modes, hdim, n_pts, L=L, nu=nu).to(device)
-    opt   = optim.Adam(model.parameters(), lr=lr)
+    opt = optim.Adam(model.parameters(), lr=lr)
     x_fix = torch.linspace(0,L,n_pts).unsqueeze(0).expand(bs,-1).unsqueeze(-1).to(device)
     print(f"\n[burgers]")
     for ep in range(n_epochs):
@@ -148,10 +168,11 @@ if __name__ == "__main__":
     device = "cpu"
     os.makedirs('checkpoints', exist_ok=True)
 
+    # Paper §4.2: training and testing on t∈[0,0.5], α=0.01
     configs = [
-        ('heat', {'nu': 0.01}, [0.0, 0.5, 1.0, 2.0]),
-        ('wave', {'c':  1.0}, [0.0, 0.25, 0.75, 1.5]),
-        ('reaction_diffusion', {'nu': 0.01, 'r': 0.05},[0.0, 0.5, 1.0, 2.0]),
+        ('heat',               {'nu': 0.01},            [0.0, 0.1, 0.25, 0.5]),
+        ('wave',               {'c':  1.0},             [0.0, 0.1, 0.25, 0.5]),
+        ('reaction_diffusion', {'nu': 0.01, 'r': 0.05}, [0.0, 0.1, 0.25, 0.5]),
     ]
 
     for pde, kw, t_vals in configs:
